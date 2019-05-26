@@ -18,6 +18,8 @@ defmodule Crawlie.Options do
       http_client: Crawlie.HttpClient.HTTPoisonClient,
       max_depth: 0,
       max_retries: 3,
+      max_visits: 0,
+      interval: 10000,
       fetch_phase: [
         min_demand: 1,
         max_demand: 5,

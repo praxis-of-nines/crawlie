@@ -9,6 +9,9 @@ defmodule Crawlie.Stage.UrlManager do
 
   require Logger
 
+  @max_demand_default 1
+  @scrape_interval_default 0
+
   #===========================================================================
   # State
   #===========================================================================
@@ -130,9 +133,15 @@ defmodule Crawlie.Stage.UrlManager do
 
 
     @spec finished_crawling?(State.t) :: boolean
-    def finished_crawling?(%State{discovered: discovered, in_flight: in_flight}) do
-      Enum.empty?(in_flight) and
-      PriorityQueue.empty?(discovered)
+    def finished_crawling?(%State{discovered: discovered, in_flight: in_flight, visited: visited} = state) do
+      reached_max_visits = case Keyword.get(state.options, :max_visits) do
+        0   -> false
+        max -> Enum.count(visited) > max
+      end
+
+      reached_max_visits or
+      (Enum.empty?(in_flight) and
+      PriorityQueue.empty?(discovered))
     end
   end
 
@@ -181,6 +190,30 @@ defmodule Crawlie.Stage.UrlManager do
     {:producer, State.new(pages, opts)}
   end
 
+  def handle_subscribe(:producer, opts, from, producers) do
+    pending = opts[:max_demand] || @max_demand_default
+    interval = opts[:interval] || @scrape_interval_default
+
+    producers = Map.put(producers, from, {pending, interval})
+
+    producers = ask_and_schedule(producers, from)
+
+    {:manual, producers}
+  end
+
+  def handle_subscribe(:consumer, _, _, state) do
+    {:automatic, state}
+  end
+
+  def handle_events(events, from, producers) do
+    # Bump the amount of pending events for the given producer
+    producers = Map.update!(producers, from, fn {pending, interval} ->
+      {pending + length(events), interval}
+    end)
+
+    # A producer_consumer would return the processed events here.
+    {:noreply, [], producers}
+  end
 
   def handle_demand(demand, %State{pending_demand: pending_demand} = state) do
     %State{state | pending_demand: pending_demand + demand}
@@ -209,6 +242,23 @@ defmodule Crawlie.Stage.UrlManager do
     state
       |> State.finished_processing(page.uri)
       |> do_handle_demand()
+  end
+
+  def handle_info({:ask, from}, producers) do
+    {:noreply, [], ask_and_schedule(producers, from)}
+  end
+
+  defp ask_and_schedule(producers, from) do
+    IO.inspect "ASKING"
+
+    case producers do
+      %{^from => {pending, interval}} ->
+        GenStage.ask(from, pending)
+        Process.send_after(self(), {:ask, from}, interval)
+        Map.put(producers, from, {0, interval})
+      %{} ->
+        producers
+    end
   end
 
 

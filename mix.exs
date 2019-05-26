@@ -13,12 +13,11 @@ defmodule Crawlie.Mixfile do
 
   @version "1.0.0"
 
-
   def project do
     [
       app: :crawlie,
       version: @version,
-      elixir: "~> 1.3",
+      elixir: "~> 1.4",
 
       package: package(),
       build_embedded: Mix.env == :prod,
@@ -27,9 +26,9 @@ defmodule Crawlie.Mixfile do
 
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
-        "coveralls": :test,
+        coveralls: :test,
         "coveralls.html": :test,
-        "test": :test,
+        test: :test,
       ],
       docs: docs(),
    ]
@@ -40,7 +39,6 @@ defmodule Crawlie.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     [
-      applications: [:logger, :httpoison, :pqueue],
       mod: {Crawlie.Application, []}
     ]
   end
@@ -65,9 +63,9 @@ defmodule Crawlie.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:gen_stage, "~> 0.12.0"},
-      {:flow, "~> 0.12.0"},
-      {:httpoison, "~> 0.10.0"},
+      {:gen_stage, "~> 0.14"},
+      {:flow, "~> 0.14"},
+      {:httpoison, "~> 0.13.0"},
       {:pqueue, "~> 1.5"},
       {:meck, "~> 0.8", only: :test},
       # testing and documentation

@@ -94,13 +94,13 @@ defmodule Crawlie do
     {:ok, url_stage} = UrlManager.start_link(source, options)
 
     url_stage
-      |> Flow.from_stage(options)
-      |> Flow.partition(Keyword.get(options, :fetch_phase))
-      |> Flow.flat_map(&fetch_operation(&1, options, url_stage))
-      |> Flow.partition(Keyword.get(options, :process_phase))
-      |> Flow.flat_map(&parse_operation(&1, options, parser_logic, url_stage))
-      |> Flow.each(&extract_uris_operation(&1, options, parser_logic, url_stage))
-      |> Flow.flat_map(&extract_data_operation(&1, options, parser_logic))
+    |> Flow.from_stage(options)
+    |> Flow.partition(Keyword.get(options, :fetch_phase))
+    |> Flow.flat_map(&fetch_operation(&1, options, url_stage))
+    |> Flow.partition(Keyword.get(options, :process_phase))
+    |> Flow.flat_map(&parse_operation(&1, options, parser_logic, url_stage))
+    |> Flow.each(&extract_uris_operation(&1, options, parser_logic, url_stage))
+    |> Flow.flat_map(&extract_data_operation(&1, options, parser_logic))
   end
 
 
