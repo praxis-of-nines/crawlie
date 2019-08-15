@@ -18,10 +18,12 @@ defmodule Crawlie.Page do
   @type t :: %This{
     depth: integer,
     uri: URI.t,
+    referrer: String.t,
     retries: integer
   }
   defstruct [
     :uri,
+    :referrer,
     depth: 0,
     retries: 0,
   ]
@@ -50,6 +52,10 @@ defmodule Crawlie.Page do
   """
   def child(%This{depth: depth}, uri) do
     This.new(uri, depth + 1)
+  end
+
+  def referrer(%This{} = page, referrer) do
+    %{page | :referrer => referrer}
   end
 
 

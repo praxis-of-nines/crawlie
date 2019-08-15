@@ -17,6 +17,7 @@ defmodule Crawlie.Response do
 
     content_type: String.t | nil,
     content_type_simple: String.t | nil,
+    referrer: String.t | nil,
   }
 
   defstruct [
@@ -29,6 +30,7 @@ defmodule Crawlie.Response do
     # "calculated" fields
     :content_type,
     :content_type_simple,
+    :referrer
   ]
 
   #===========================================================================

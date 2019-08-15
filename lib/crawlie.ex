@@ -106,14 +106,14 @@ defmodule Crawlie do
 
   @spec fetch_operation(Page.t, Keyword.t, GenStage.stage) :: [{Page.t, String.t}]
   @doc false
-  def fetch_operation(%Page{uri: uri} = page, options, url_stage) do
+  def fetch_operation(%Page{uri: uri, referrer: referrer} = page, options, url_stage) do
     client = Keyword.get(options, :http_client)
     start_time = Utils.utimestamp()
     case client.get(uri, options) do
       {:ok, response} ->
         duration_usec = Utils.utimestamp() - start_time
         Options.stats_op(options, &StatsServer.fetch_succeeded(&1, page, response, duration_usec))
-        [{page, response}]
+        [{page, %{response | :referrer => referrer}}]
       {:error, _reason} ->
         UrlManager.page_failed(url_stage, page)
         max_failed_uris_to_track = Keyword.fetch!(options, :max_fetch_failed_uris_tracked)
@@ -150,11 +150,12 @@ defmodule Crawlie do
 
   @spec extract_uris_operation({Page.t, Response.t, term}, Keyword.t, module, GenStage.stage) :: any
   @doc false
-  def extract_uris_operation({%Page{depth: depth} = page, response, parsed}, options, module, url_stage) do
+  def extract_uris_operation({%Page{uri: uri, depth: depth} = page, response, parsed}, options, module, url_stage) do
     max_depth = Keyword.get(options, :max_depth, 0)
     if depth < max_depth do
       pages = module.extract_uris(response, parsed, options)
         |> Enum.map(&Page.child(page, &1))
+        |> Enum.map(fn page -> %{page | :referrer => URI.to_string(uri)} end)
       UrlManager.add_children_pages(url_stage, pages)
       Options.stats_op(options, &StatsServer.uris_extracted(&1, Enum.count(pages)))
     end
